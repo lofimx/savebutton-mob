@@ -1,6 +1,6 @@
-# kaya-flutter
+# Save Button Mobile
 
-iOS and Android apps for Kaya, the local-first bookmarking engine.
+iOS and Android apps for Save Button, the local-first bookmarking engine.
 
 ## Minimum Android and iOS Versions
 

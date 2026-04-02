@@ -49,6 +49,7 @@ app.*.map.json
 *.keystore
 android/key.properties
 android-signing-credentials.txt
+*.pem
 
 # iOS signing
 ios-cert-private-key.pem
