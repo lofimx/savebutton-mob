@@ -46,7 +46,7 @@ workflows:
       - name: Build AAB (Android)
         script: |
           flutter build appbundle --release \
-            --build-name=1.0.$PROJECT_BUILD_NUMBER \
+            --build-name=1.1.$PROJECT_BUILD_NUMBER \
             --build-number=$PROJECT_BUILD_NUMBER
       - name: Set up iOS code signing
         script: |
@@ -58,7 +58,7 @@ workflows:
       - name: Build IPA (iOS)
         script: |
           flutter build ipa --release \
-            --build-name=1.0.$PROJECT_BUILD_NUMBER \
+            --build-name=1.1.$PROJECT_BUILD_NUMBER \
             --build-number=$PROJECT_BUILD_NUMBER \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
