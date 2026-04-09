@@ -60,5 +60,11 @@ ios-cert-private-key.pem
 /CLAUDE.md
 /.claude
 
+# flargon
 /tmp
 /flargon
+
+# slop PRs
+AGENTS.md
+CLAUDE.md
+
