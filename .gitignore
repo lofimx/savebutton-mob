@@ -43,6 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+android/.gradle/
+android/local.properties
 
 # Android signing
 *.jks
@@ -54,6 +56,13 @@ android-signing-credentials.txt
 # iOS signing
 ios-cert-private-key.pem
 *.p8
+
+# iOS generated
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+ios/.symlinks/
+ios/Pods/
 
 # PR slop
 /AGENTS.md
@@ -67,4 +76,5 @@ ios-cert-private-key.pem
 # slop PRs
 AGENTS.md
 CLAUDE.md
+
 
