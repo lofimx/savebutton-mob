@@ -15,6 +15,9 @@ const _keyRefreshToken = 'kaya_refresh_token';
 const _keyAccessToken = 'kaya_access_token';
 const _keyAccessTokenExpiry = 'kaya_access_token_expiry';
 
+/// Header to skip ngrok's browser warning interstitial during development.
+const _ngrokHeaders = {'ngrok-skip-browser-warning': 'true'};
+
 /// Authentication service for JWT-based auth with the Save Button server.
 /// Handles PKCE code generation, token exchange, refresh, and storage.
 class AuthService {
@@ -80,7 +83,7 @@ class AuthService {
     final uri = Uri.parse('$serverUrl/api/v1/auth/token');
 
     try {
-      final response = await http.post(uri, body: {
+      final response = await http.post(uri, headers: _ngrokHeaders, body: {
         'grant_type': 'refresh_token',
         'refresh_token': refreshToken,
       });
@@ -119,7 +122,7 @@ class AuthService {
     final serverUrl = _accountRepo.getServerUrl();
     final uri = Uri.parse('$serverUrl/api/v1/auth/token');
 
-    final response = await http.post(uri, body: {
+    final response = await http.post(uri, headers: _ngrokHeaders, body: {
       'grant_type': 'password',
       'email': email,
       'password': password,
@@ -191,7 +194,7 @@ class AuthService {
     final serverUrl = _accountRepo.getServerUrl();
     final uri = Uri.parse('$serverUrl/api/v1/auth/token');
 
-    final response = await http.post(uri, body: {
+    final response = await http.post(uri, headers: _ngrokHeaders, body: {
       'grant_type': 'authorization_code',
       'code': code,
       'code_verifier': codeVerifier,
@@ -222,7 +225,7 @@ class AuthService {
       final serverUrl = _accountRepo.getServerUrl();
       final uri = Uri.parse('$serverUrl/api/v1/auth/revoke');
       try {
-        await http.post(uri, body: {'refresh_token': refreshToken});
+        await http.post(uri, headers: _ngrokHeaders, body: {'refresh_token': refreshToken});
         _logger?.i('Auth: refresh token revoked');
       } catch (e) {
         _logger?.w('Auth: failed to revoke refresh token: $e');

@@ -29,6 +29,8 @@
 	<array>
 		<string>INSendMessageIntent</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Save Button needs local network access to find your development server.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Save Button needs access to your photo library to save shared images and videos.</string>
 	<key>CFBundleDevelopmentRegion</key>

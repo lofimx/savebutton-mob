@@ -560,6 +560,7 @@ class SyncService {
     final uri = Uri.parse(url);
     final request = http.Request(method, uri);
     request.headers['Authorization'] = authHeader;
+    request.headers['ngrok-skip-browser-warning'] = 'true';
 
     final client = http.Client();
     try {
@@ -580,6 +581,7 @@ class SyncService {
     final uri = Uri.parse(url);
     final request = http.MultipartRequest('POST', uri);
     request.headers['Authorization'] = authHeader;
+    request.headers['ngrok-skip-browser-warning'] = 'true';
     request.files.add(
       http.MultipartFile.fromBytes('file', bytes, filename: filename),
     );

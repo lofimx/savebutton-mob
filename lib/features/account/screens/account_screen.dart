@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kaya/core/services/lan_discovery_service.dart';
 import 'package:kaya/core/services/logger_service.dart';
 import 'package:kaya/core/widgets/kaya_icon.dart';
 import 'package:kaya/features/account/screens/troubleshooting_screen.dart';
@@ -35,6 +36,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool _authenticating = false;
   bool _loggingOut = false;
   bool _loaded = false;
+  bool _scanning = false;
+  List<String> _discoveredHosts = [];
+  String? _deviceIp;
 
   @override
   void dispose() {
@@ -102,6 +106,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildServerSection() {
+    final serverUrl = _serverController.text;
+    final showLocalhostWarning = isLocalhostUrl(serverUrl);
+    final showPrivateIpWarning = !showLocalhostWarning && isPrivateIpUrl(serverUrl);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -118,12 +125,183 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.url,
-              onChanged: (_) => _saveServerUrl(),
+              onChanged: (_) {
+                _saveServerUrl();
+                setState(() {
+                  // Reset scan state when URL changes
+                  _discoveredHosts = [];
+                  _deviceIp = null;
+                });
+              },
+            ),
+            if (showLocalhostWarning) _buildLocalhostWarning(),
+            if (showPrivateIpWarning) _buildPrivateIpWarning(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocalhostWarning() {
+    final port = extractPort(_serverController.text);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.amber.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '"localhost" on your phone is the phone itself, '
+                    'not your computer.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_scanning)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Scanning ${_deviceIp != null ? '${ref.read(lanDiscoveryServiceProvider).getSubnet(_deviceIp!)}.0/24' : 'network'} '
+                    'on port $port...',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  const LinearProgressIndicator(),
+                ],
+              )
+            else
+              TextButton.icon(
+                onPressed: _scanForServer,
+                icon: const Icon(Icons.wifi_find, size: 18),
+                label: Text('Scan network for server on port $port'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            if (_discoveredHosts.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Found:', style: Theme.of(context).textTheme.bodySmall),
+              for (final host in _discoveredHosts)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  leading: const Icon(Icons.computer, size: 18),
+                  title: Text('http://$host:${extractPort(_serverController.text)}'),
+                  onTap: () => _useDiscoveredHost(host),
+                ),
+            ] else if (!_scanning && _deviceIp != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'No server found on port $port. Your device IP is $_deviceIp '
+                '-- your computer is likely on the same subnet.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.outline,
+                    ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrivateIpWarning() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.amber.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.warning_amber_rounded,
+                color: Colors.amber, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Email/password sign-in works with a LAN IP, but '
+                '"Sign In with Browser" (OAuth) will not. '
+                'Use an ngrok tunnel for OAuth testing.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _scanForServer() async {
+    final service = ref.read(lanDiscoveryServiceProvider);
+    final port = extractPort(_serverController.text);
+
+    setState(() {
+      _scanning = true;
+      _discoveredHosts = [];
+      _deviceIp = null;
+    });
+
+    final ip = await service.getDeviceIp();
+    if (!mounted) return;
+
+    if (ip == null) {
+      setState(() => _scanning = false);
+      _showSnackBar('Could not determine WiFi IP. Are you connected to WiFi?',
+          isError: true);
+      return;
+    }
+
+    final subnet = service.getSubnet(ip);
+    if (subnet == null) {
+      setState(() => _scanning = false);
+      _showSnackBar('Unexpected IP format: $ip', isError: true);
+      return;
+    }
+
+    setState(() => _deviceIp = ip);
+
+    await for (final host in service.scanSubnet(subnet: subnet, port: port)) {
+      if (!mounted) return;
+      setState(() => _discoveredHosts = [..._discoveredHosts, host]);
+    }
+
+    if (mounted) {
+      setState(() => _scanning = false);
+    }
+  }
+
+  void _useDiscoveredHost(String host) {
+    final port = extractPort(_serverController.text);
+    _serverController.text = 'http://$host:$port';
+    _saveServerUrl();
+    setState(() {
+      _discoveredHosts = [];
+      _deviceIp = null;
+    });
   }
 
   /// Shown when the user is authenticated with JWT tokens.

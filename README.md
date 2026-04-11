@@ -257,6 +257,54 @@ flutter clean
 flutter pub get
 ```
 
+### Testing OAuth Sign-In Against a Local Server
+
+Google OAuth rejects callback URLs with private IP addresses (e.g. `http://192.168.x.x:3000`). When testing "Sign In with Browser" on a real device against a local `savebutton-web` server, use [ngrok](https://ngrok.com/) to expose the server with a public URL.
+
+1. **Install ngrok:**
+
+   ```bash
+   # macOS (Homebrew)
+   brew install ngrok
+
+   # Debian/Ubuntu (apt)
+   curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+     | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+   echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+     | sudo tee /etc/apt/sources.list.d/ngrok.list
+   sudo apt update && sudo apt install ngrok
+
+   # Then authenticate
+   ngrok config add-authtoken YOUR_AUTH_TOKEN
+   ```
+
+2. **Start the Rails server and ngrok tunnel:**
+
+   ```bash
+   # In one terminal, start savebutton-web
+   cd ../savebutton-web
+   bin/rails server
+
+   # In another terminal, tunnel port 3000
+   ngrok http 3000
+   ```
+
+3. **Register the ngrok URL with Google:**
+
+   In Google Cloud Console, go to **APIs & Services > Credentials**, click your OAuth 2.0 Client ID, and add the ngrok callback URL to **Authorized redirect URIs**:
+
+   ```
+   https://your-subdomain.ngrok-free.app/auth/google_oauth2/callback
+   ```
+
+   Replace `your-subdomain` with the actual subdomain from the `ngrok http` output. Free ngrok accounts get a random subdomain that changes on each restart; paid accounts can reserve a stable subdomain to avoid re-registering the URI each time.
+
+4. **Use the ngrok URL in the mobile app:**
+
+   On the Account screen, set the server URL to the ngrok HTTPS URL (e.g. `https://XXXX-XX-XX-XX-XX.ngrok-free.app`). "Sign In with Browser" will now work with Google OAuth.
+
+Note: Email/password sign-in does not use OAuth and works fine with a LAN IP address. Use the app's localhost detection to scan for your dev server on the local network.
+
 ## Codemagic
 
 iOS and Android apps are released via Codemagic. Use [codemagic-cli-tools](https://docs.codemagic.io/knowledge-codemagic/codemagic-cli-tools/) whenever possible:
