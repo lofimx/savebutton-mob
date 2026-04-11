@@ -58,7 +58,7 @@ final accountRepositoryProvider = FutureProvider<AccountRepository>.internal(
 // ignore: unused_element
 typedef AccountRepositoryRef = FutureProviderRef<AccountRepository>;
 String _$accountSettingsNotifierHash() =>
-    r'750d72db31fde21c443583d70505687462a57418';
+    r'61345951161adc9ed562680269e1d00310af1658';
 
 /// Notifier for account settings state
 ///

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:kaya/core/services/connectivity_service.dart';
 import 'package:kaya/core/services/logger_service.dart';
 import 'package:kaya/features/account/services/account_repository.dart';
+import 'package:kaya/features/account/services/auth_service.dart';
 import 'package:kaya/features/anga/services/anga_repository.dart';
 import 'package:kaya/features/anga/services/file_storage_service.dart';
 import 'package:kaya/features/errors/services/error_service.dart';
@@ -51,15 +52,36 @@ class SyncResult {
 class SyncService {
   final FileStorageService _storage;
   final AccountRepository _accountRepo;
+  final AuthService _authService;
   final LoggerService? _logger;
   final ErrorService _errorService;
 
   SyncService(
     this._storage,
     this._accountRepo,
+    this._authService,
     this._logger,
     this._errorService,
   );
+
+  /// Resolves the authorization header for API requests.
+  /// Uses Bearer token if available, falls back to Basic Auth.
+  Future<String?> _resolveAuthHeader() async {
+    // Try token auth first
+    final accessToken = await _authService.getAccessToken();
+    if (accessToken != null) {
+      return 'Bearer $accessToken';
+    }
+
+    // Fall back to legacy Basic Auth
+    final email = _accountRepo.getEmail();
+    final password = await _accountRepo.getPassword();
+    if (email != null && password != null && password.isNotEmpty) {
+      return 'Basic ${base64Encode(utf8.encode('$email:$password'))}';
+    }
+
+    return null;
+  }
 
   /// Performs a full sync with the server.
   /// Connection errors are tracked separately and don't get added to the error service.
@@ -70,9 +92,9 @@ class SyncService {
     }
 
     final email = settings.email!;
-    final password = await _accountRepo.getPassword();
-    if (password == null) {
-      return SyncResult(errors: ['Password not set']);
+    final authHeader = await _resolveAuthHeader();
+    if (authHeader == null) {
+      return SyncResult(errors: ['No authentication available']);
     }
 
     final baseUrl = settings.serverUrl;
@@ -88,7 +110,7 @@ class SyncService {
 
     try {
       // Sync anga files
-      final angaResult = await _syncAngas(baseUrl, email, password);
+      final angaResult = await _syncAngas(baseUrl, email, authHeader);
       angaDownloaded = angaResult.downloaded;
       angaUploaded = angaResult.uploaded;
       errors.addAll(angaResult.errors);
@@ -99,7 +121,7 @@ class SyncService {
 
       // Sync meta files (skip if already got connection error)
       if (!isConnectionError) {
-        final metaResult = await _syncMeta(baseUrl, email, password);
+        final metaResult = await _syncMeta(baseUrl, email, authHeader);
         metaDownloaded = metaResult.downloaded;
         metaUploaded = metaResult.uploaded;
         errors.addAll(metaResult.errors);
@@ -111,7 +133,7 @@ class SyncService {
 
       // Sync favicons from cache (download only, skip if already got connection error)
       if (!isConnectionError) {
-        final faviconResult = await _syncFavicons(baseUrl, email, password);
+        final faviconResult = await _syncFavicons(baseUrl, email, authHeader);
         faviconDownloaded = faviconResult.downloaded;
         errors.addAll(faviconResult.errors);
         if (faviconResult.isConnectionError) {
@@ -122,7 +144,7 @@ class SyncService {
 
       // Sync words (download only, skip if already got connection error)
       if (!isConnectionError) {
-        final wordsResult = await _syncWords(baseUrl, email, password);
+        final wordsResult = await _syncWords(baseUrl, email, authHeader);
         wordsDownloaded = wordsResult.downloaded;
         errors.addAll(wordsResult.errors);
         if (wordsResult.isConnectionError) {
@@ -179,15 +201,14 @@ class SyncService {
     if (!settings.canSync) return false;
 
     final email = settings.email!;
-    final password = await _accountRepo.getPassword();
-    if (password == null) return false;
+    final authHeader = await _resolveAuthHeader();
+    if (authHeader == null) return false;
 
     try {
       final response = await _makeRequest(
         'GET',
         '${settings.serverUrl}/api/v1/${Uri.encodeComponent(email)}/anga',
-        email,
-        password,
+        authHeader,
       );
       return response.statusCode == 200;
     } catch (e) {
@@ -199,7 +220,7 @@ class SyncService {
   Future<_SyncDirResult> _syncAngas(
     String baseUrl,
     String email,
-    String password,
+    String authHeader,
   ) async {
     final result = _SyncDirResult();
 
@@ -207,8 +228,7 @@ class SyncService {
       // Get server file list
       final serverFiles = await _fetchFileList(
         '$baseUrl/api/v1/${Uri.encodeComponent(email)}/anga',
-        email,
-        password,
+        authHeader,
       );
 
       // Get local file list
@@ -224,8 +244,7 @@ class SyncService {
           final response = await _makeRequest(
             'GET',
             '$baseUrl/api/v1/${Uri.encodeComponent(email)}/anga/$filename',
-            email,
-            password,
+            authHeader,
           );
           if (response.statusCode == 200) {
             final path = '${_storage.angaPath}/$filename';
@@ -252,8 +271,7 @@ class SyncService {
 
           final response = await _uploadFile(
             '$baseUrl/api/v1/${Uri.encodeComponent(email)}/anga/$filename',
-            email,
-            password,
+            authHeader,
             filename,
             bytes,
             contentType,
@@ -292,7 +310,7 @@ class SyncService {
   Future<_SyncDirResult> _syncMeta(
     String baseUrl,
     String email,
-    String password,
+    String authHeader,
   ) async {
     final result = _SyncDirResult();
 
@@ -300,8 +318,7 @@ class SyncService {
       // Get server file list
       final serverFiles = await _fetchFileList(
         '$baseUrl/api/v1/${Uri.encodeComponent(email)}/meta',
-        email,
-        password,
+        authHeader,
       );
 
       // Get local file list
@@ -317,8 +334,7 @@ class SyncService {
           final response = await _makeRequest(
             'GET',
             '$baseUrl/api/v1/${Uri.encodeComponent(email)}/meta/$filename',
-            email,
-            password,
+            authHeader,
           );
           if (response.statusCode == 200) {
             final path = '${_storage.metaPath}/$filename';
@@ -344,8 +360,7 @@ class SyncService {
 
           final response = await _uploadFile(
             '$baseUrl/api/v1/${Uri.encodeComponent(email)}/meta/$filename',
-            email,
-            password,
+            authHeader,
             filename,
             bytes,
             'application/toml',
@@ -391,7 +406,7 @@ class SyncService {
   Future<_SyncDirResult> _syncFavicons(
     String baseUrl,
     String email,
-    String password,
+    String authHeader,
   ) async {
     final result = _SyncDirResult();
 
@@ -399,8 +414,7 @@ class SyncService {
       // Get server cache bookmark list
       final serverBookmarks = await _fetchFileList(
         '$baseUrl/api/v1/${Uri.encodeComponent(email)}/cache',
-        email,
-        password,
+        authHeader,
       );
 
       for (final bookmark in serverBookmarks) {
@@ -412,8 +426,7 @@ class SyncService {
         // Get server file list for this bookmark's cache
         final serverFiles = await _fetchFileList(
           '$baseUrl/api/v1/${Uri.encodeComponent(email)}/cache/$bookmark',
-          email,
-          password,
+          authHeader,
         );
 
         // Only consider favicon files
@@ -430,8 +443,7 @@ class SyncService {
             final response = await _makeRequest(
               'GET',
               '$baseUrl/api/v1/${Uri.encodeComponent(email)}/cache/$bookmark/$filename',
-              email,
-              password,
+              authHeader,
             );
             if (response.statusCode == 200) {
               await _storage.saveCacheFile(
@@ -467,7 +479,7 @@ class SyncService {
   Future<_SyncDirResult> _syncWords(
     String baseUrl,
     String email,
-    String password,
+    String authHeader,
   ) async {
     final result = _SyncDirResult();
 
@@ -475,8 +487,7 @@ class SyncService {
       // Get server words anga list
       final serverAngas = await _fetchFileList(
         '$baseUrl/api/v1/${Uri.encodeComponent(email)}/words',
-        email,
-        password,
+        authHeader,
       );
 
       // Get local words anga list
@@ -489,8 +500,7 @@ class SyncService {
         // Get server file list for this anga's words
         final serverFiles = await _fetchFileList(
           '$baseUrl/api/v1/${Uri.encodeComponent(email)}/words/$anga',
-          email,
-          password,
+          authHeader,
         );
 
         for (final filename in serverFiles) {
@@ -498,8 +508,7 @@ class SyncService {
             final response = await _makeRequest(
               'GET',
               '$baseUrl/api/v1/${Uri.encodeComponent(email)}/words/$anga/$filename',
-              email,
-              password,
+              authHeader,
             );
             if (response.statusCode == 200) {
               await _storage.saveWordsFile(anga, filename, response.bodyBytes);
@@ -528,10 +537,9 @@ class SyncService {
 
   Future<List<String>> _fetchFileList(
     String url,
-    String email,
-    String password,
+    String authHeader,
   ) async {
-    final response = await _makeRequest('GET', url, email, password);
+    final response = await _makeRequest('GET', url, authHeader);
     if (response.statusCode == 200) {
       // Don't decode - store filenames exactly as the server returns them
       // (URL-encoded) to maintain perfect symmetry with the server's filesystem
@@ -547,13 +555,11 @@ class SyncService {
   Future<http.Response> _makeRequest(
     String method,
     String url,
-    String email,
-    String password,
+    String authHeader,
   ) async {
     final uri = Uri.parse(url);
     final request = http.Request(method, uri);
-    request.headers['Authorization'] =
-        'Basic ${base64Encode(utf8.encode('$email:$password'))}';
+    request.headers['Authorization'] = authHeader;
 
     final client = http.Client();
     try {
@@ -566,16 +572,14 @@ class SyncService {
 
   Future<http.Response> _uploadFile(
     String url,
-    String email,
-    String password,
+    String authHeader,
     String filename,
     List<int> bytes,
     String contentType,
   ) async {
     final uri = Uri.parse(url);
     final request = http.MultipartRequest('POST', uri);
-    request.headers['Authorization'] =
-        'Basic ${base64Encode(utf8.encode('$email:$password'))}';
+    request.headers['Authorization'] = authHeader;
     request.files.add(
       http.MultipartFile.fromBytes('file', bytes, filename: filename),
     );
@@ -639,9 +643,10 @@ bool _isConnectionError(Object e) {
 Future<SyncService> syncService(Ref ref) async {
   final storage = await ref.watch(fileStorageServiceProvider.future);
   final accountRepo = await ref.watch(accountRepositoryProvider.future);
+  final authService = await ref.watch(authServiceProvider.future);
   final logger = ref.watch(loggerProvider);
   final errorService = ref.watch(errorServiceProvider.notifier);
-  return SyncService(storage, accountRepo, logger, errorService);
+  return SyncService(storage, accountRepo, authService, logger, errorService);
 }
 
 /// State for sync status

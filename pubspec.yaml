@@ -47,6 +47,12 @@ dependencies:
   http: ^1.2.2
   connectivity_plus: ^6.1.2
 
+  # Auth
+  crypto: ^3.0.6
+  flutter_web_auth_2: ^4.0.2
+  device_info_plus: ^11.3.3
+  package_info_plus: ^8.3.0
+
   # Metadata parsing
   toml: ^0.16.0
 

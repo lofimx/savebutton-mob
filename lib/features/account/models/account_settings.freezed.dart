@@ -23,8 +23,11 @@ mixin _$AccountSettings {
   /// User's email for authentication
   String? get email => throw _privateConstructorUsedError;
 
-  /// Whether credentials are configured
+  /// Whether legacy password credentials are configured
   bool get hasCredentials => throw _privateConstructorUsedError;
+
+  /// Whether JWT token auth is configured (refresh token stored)
+  bool get hasTokenAuth => throw _privateConstructorUsedError;
 
   /// Create a copy of AccountSettings
   /// with the given fields replaced by the non-null parameter values.
@@ -40,7 +43,12 @@ abstract class $AccountSettingsCopyWith<$Res> {
     $Res Function(AccountSettings) then,
   ) = _$AccountSettingsCopyWithImpl<$Res, AccountSettings>;
   @useResult
-  $Res call({String serverUrl, String? email, bool hasCredentials});
+  $Res call({
+    String serverUrl,
+    String? email,
+    bool hasCredentials,
+    bool hasTokenAuth,
+  });
 }
 
 /// @nodoc
@@ -61,6 +69,7 @@ class _$AccountSettingsCopyWithImpl<$Res, $Val extends AccountSettings>
     Object? serverUrl = null,
     Object? email = freezed,
     Object? hasCredentials = null,
+    Object? hasTokenAuth = null,
   }) {
     return _then(
       _value.copyWith(
@@ -75,6 +84,10 @@ class _$AccountSettingsCopyWithImpl<$Res, $Val extends AccountSettings>
             hasCredentials: null == hasCredentials
                 ? _value.hasCredentials
                 : hasCredentials // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            hasTokenAuth: null == hasTokenAuth
+                ? _value.hasTokenAuth
+                : hasTokenAuth // ignore: cast_nullable_to_non_nullable
                       as bool,
           )
           as $Val,
@@ -91,7 +104,12 @@ abstract class _$$AccountSettingsImplCopyWith<$Res>
   ) = __$$AccountSettingsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String serverUrl, String? email, bool hasCredentials});
+  $Res call({
+    String serverUrl,
+    String? email,
+    bool hasCredentials,
+    bool hasTokenAuth,
+  });
 }
 
 /// @nodoc
@@ -111,6 +129,7 @@ class __$$AccountSettingsImplCopyWithImpl<$Res>
     Object? serverUrl = null,
     Object? email = freezed,
     Object? hasCredentials = null,
+    Object? hasTokenAuth = null,
   }) {
     return _then(
       _$AccountSettingsImpl(
@@ -126,6 +145,10 @@ class __$$AccountSettingsImplCopyWithImpl<$Res>
             ? _value.hasCredentials
             : hasCredentials // ignore: cast_nullable_to_non_nullable
                   as bool,
+        hasTokenAuth: null == hasTokenAuth
+            ? _value.hasTokenAuth
+            : hasTokenAuth // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -138,6 +161,7 @@ class _$AccountSettingsImpl extends _AccountSettings {
     required this.serverUrl,
     this.email,
     this.hasCredentials = false,
+    this.hasTokenAuth = false,
   }) : super._();
 
   /// The Kaya server URL (default: https://savebutton.com)
@@ -148,14 +172,19 @@ class _$AccountSettingsImpl extends _AccountSettings {
   @override
   final String? email;
 
-  /// Whether credentials are configured
+  /// Whether legacy password credentials are configured
   @override
   @JsonKey()
   final bool hasCredentials;
 
+  /// Whether JWT token auth is configured (refresh token stored)
+  @override
+  @JsonKey()
+  final bool hasTokenAuth;
+
   @override
   String toString() {
-    return 'AccountSettings(serverUrl: $serverUrl, email: $email, hasCredentials: $hasCredentials)';
+    return 'AccountSettings(serverUrl: $serverUrl, email: $email, hasCredentials: $hasCredentials, hasTokenAuth: $hasTokenAuth)';
   }
 
   @override
@@ -167,12 +196,14 @@ class _$AccountSettingsImpl extends _AccountSettings {
                 other.serverUrl == serverUrl) &&
             (identical(other.email, email) || other.email == email) &&
             (identical(other.hasCredentials, hasCredentials) ||
-                other.hasCredentials == hasCredentials));
+                other.hasCredentials == hasCredentials) &&
+            (identical(other.hasTokenAuth, hasTokenAuth) ||
+                other.hasTokenAuth == hasTokenAuth));
   }
 
   @override
   int get hashCode =>
-      Object.hash(runtimeType, serverUrl, email, hasCredentials);
+      Object.hash(runtimeType, serverUrl, email, hasCredentials, hasTokenAuth);
 
   /// Create a copy of AccountSettings
   /// with the given fields replaced by the non-null parameter values.
@@ -191,6 +222,7 @@ abstract class _AccountSettings extends AccountSettings {
     required final String serverUrl,
     final String? email,
     final bool hasCredentials,
+    final bool hasTokenAuth,
   }) = _$AccountSettingsImpl;
   const _AccountSettings._() : super._();
 
@@ -202,9 +234,13 @@ abstract class _AccountSettings extends AccountSettings {
   @override
   String? get email;
 
-  /// Whether credentials are configured
+  /// Whether legacy password credentials are configured
   @override
   bool get hasCredentials;
+
+  /// Whether JWT token auth is configured (refresh token stored)
+  @override
+  bool get hasTokenAuth;
 
   /// Create a copy of AccountSettings
   /// with the given fields replaced by the non-null parameter values.

@@ -28,6 +28,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- Handle savebutton:// deep links for OAuth callback -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="savebutton" android:host="auth"/>
+            </intent-filter>
+
             <!-- Handle shared text/URLs -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>

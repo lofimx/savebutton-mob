@@ -70,6 +70,9 @@ class KayaIcon {
   static IconData get visibility =>
       _isIOS ? CupertinoIcons.eye_fill : Icons.visibility;
   static IconData get bugReport => Icons.bug_report;
+  static IconData get logout => Icons.logout;
+  static IconData get language => Icons.language;
+  static IconData get checkCircle => Icons.check_circle;
 
   // Destructive / editing
   static IconData get delete => Icons.delete;

@@ -10,6 +10,7 @@ part 'account_repository.g.dart';
 const _keyServerUrl = 'kaya_server_url';
 const _keyEmail = 'kaya_email';
 const _keyPassword = 'kaya_password';
+const _keyRefreshToken = 'kaya_refresh_token';
 const _defaultServerUrl = AccountSettings.defaultServerUrl;
 
 /// Repository for managing account settings and credentials.
@@ -25,11 +26,14 @@ class AccountRepository {
     final serverUrl = _prefs.getString(_keyServerUrl) ?? _defaultServerUrl;
     final email = _prefs.getString(_keyEmail);
     final password = await _secureStorage.read(key: _keyPassword);
+    final refreshToken = await _secureStorage.read(key: _keyRefreshToken);
 
     return AccountSettings(
       serverUrl: serverUrl,
       email: email,
       hasCredentials: email != null && password != null && password.isNotEmpty,
+      hasTokenAuth:
+          refreshToken != null && refreshToken.isNotEmpty,
     );
   }
 
@@ -56,7 +60,7 @@ class AccountRepository {
     return await _secureStorage.read(key: _keyPassword);
   }
 
-  /// Clears all credentials.
+  /// Clears all credentials (both legacy password and tokens).
   Future<void> clearCredentials() async {
     await _prefs.remove(_keyEmail);
     await _secureStorage.delete(key: _keyPassword);
@@ -124,6 +128,11 @@ class AccountSettingsNotifier extends _$AccountSettingsNotifier {
   Future<void> clearCredentials() async {
     final repo = await ref.read(accountRepositoryProvider.future);
     await repo.clearCredentials();
+    ref.invalidateSelf();
+  }
+
+  /// Refresh settings state (e.g., after token auth completes).
+  Future<void> refresh() async {
     ref.invalidateSelf();
   }
 }
