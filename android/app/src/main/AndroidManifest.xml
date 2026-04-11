@@ -69,9 +69,9 @@
                 <data android:mimeType="*/*"/>
             </intent-filter>
         </activity>
-        <!-- FlutterWebAuth2 callback activity for OAuth redirects -->
+        <!-- Custom OAuth callback activity that dismisses the Chrome Custom Tab -->
         <activity
-            android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
+            android:name=".AuthCallbackActivity"
             android:exported="true">
             <intent-filter android:label="flutter_web_auth_2">
                 <action android:name="android.intent.action.VIEW"/>

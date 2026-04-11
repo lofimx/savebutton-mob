@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kaya/core/services/lan_discovery_service.dart';
@@ -81,8 +82,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildServerSection(),
-                const SizedBox(height: 24),
                 if (settings.hasTokenAuth)
                   _buildConnectedSection(settings)
                 else
@@ -92,6 +91,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   _buildActionsSection(syncStatus),
                   const SizedBox(height: 24),
                 ],
+                _buildServerSection(),
+                const SizedBox(height: 24),
                 _buildTroubleshootingSection(),
               ],
             ),
@@ -106,9 +107,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   Widget _buildServerSection() {
-    final serverUrl = _serverController.text;
+    final serverUrl = _serverController.text.trim();
     final showLocalhostWarning = isLocalhostUrl(serverUrl);
     final showPrivateIpWarning = !showLocalhostWarning && isPrivateIpUrl(serverUrl);
+    final isCustomServer = serverUrl.isNotEmpty &&
+        serverUrl != AccountSettings.defaultServerUrl;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -134,6 +137,26 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 });
               },
             ),
+            if (isCustomServer)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: TextButton.icon(
+                  onPressed: () {
+                    _serverController.text = AccountSettings.defaultServerUrl;
+                    _saveServerUrl();
+                    setState(() {
+                      _discoveredHosts = [];
+                      _deviceIp = null;
+                    });
+                  },
+                  icon: const Icon(Icons.restore, size: 18),
+                  label: const Text('Restore Default'),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ),
             if (showLocalhostWarning) _buildLocalhostWarning(),
             if (showPrivateIpWarning) _buildPrivateIpWarning(),
           ],
@@ -348,7 +371,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   }
 
   /// Shown when the user is not authenticated with tokens.
-  /// Provides both email/password login and OAuth options.
+  /// Provides provider-specific OAuth buttons and email/password login.
   Widget _buildLoginSection(AccountSettings settings) {
     return Card(
       child: Padding(
@@ -361,6 +384,68 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
+
+            // OAuth provider buttons
+            OutlinedButton.icon(
+              onPressed: _authenticating
+                  ? null
+                  : () => _signInWithProvider('google_oauth2'),
+              icon: SvgPicture.asset('doc/design/icon_google.svg', width: 20, height: 20),
+              label: const Text('Sign In with Google'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _authenticating
+                  ? null
+                  : () => _signInWithProvider('microsoft_graph'),
+              icon: SvgPicture.asset('doc/design/icon_microsoft.svg', width: 20, height: 20),
+              label: const Text('Sign In with Microsoft'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: null,
+              icon: SvgPicture.asset('doc/design/icon_apple.svg', width: 20, height: 20),
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Sign In with Apple'),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Coming soon',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Divider
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    'or',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                  ),
+                ),
+                const Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 20),
 
             // Email/password form
             TextField(
@@ -412,38 +497,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   : const Text('Sign In'),
             ),
 
-            // Divider
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'or',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                  ),
-                ),
-                const Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // OAuth buttons
-            OutlinedButton.icon(
-              onPressed: _authenticating ? null : _signInWithOAuth,
-              icon: Icon(KayaIcon.language),
-              label: const Text('Sign In with Browser'),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Opens your browser to sign in with Google, Microsoft, or email',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-              textAlign: TextAlign.center,
+            // Sign Up
+            const SizedBox(height: 16),
+            Center(
+              child: TextButton(
+                onPressed: _authenticating ? null : _signUp,
+                child: const Text("Don't have an account? Sign Up"),
+              ),
             ),
 
             // Legacy mode hint
@@ -590,30 +650,43 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
   }
 
-  /// Sign in via OAuth using the browser-based PKCE flow.
+  /// Sign in via a specific OAuth provider using the browser-based PKCE flow.
   /// Opens a Chrome Custom Tab (Android) or ASWebAuthenticationSession (iOS)
-  /// to the server's login page, then handles the savebutton:// callback.
-  Future<void> _signInWithOAuth() async {
+  /// to a provider-specific login page, then handles the savebutton:// callback.
+  Future<void> _signInWithProvider(String provider) async {
+    await _authenticateViaBrowser(provider: provider);
+  }
+
+  /// Sign up via the browser-based PKCE flow.
+  /// Opens the registration page on the server.
+  Future<void> _signUp() async {
+    await _authenticateViaBrowser(register: true);
+  }
+
+  /// Shared browser-based PKCE authentication flow.
+  Future<void> _authenticateViaBrowser({
+    String? provider,
+    bool register = false,
+  }) async {
     setState(() => _authenticating = true);
 
     try {
       final authService = await ref.read(authServiceProvider.future);
       final deviceInfo = await _getDeviceInfo();
 
-      // Build the authorize URL with PKCE params
       final authorizeUrl = authService.buildAuthorizeUrl(
         deviceName: deviceInfo.name,
         deviceType: deviceInfo.type,
+        provider: provider,
+        register: register,
         state: DateTime.now().millisecondsSinceEpoch.toString(),
       );
 
-      // Open browser and wait for callback
       final callbackUrl = await FlutterWebAuth2.authenticate(
         url: authorizeUrl.toString(),
         callbackUrlScheme: 'savebutton',
       );
 
-      // Extract the authorization code from the callback URL
       final callbackUri = Uri.parse(callbackUrl);
       final code = callbackUri.queryParameters['code'];
 
@@ -621,7 +694,6 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         throw AuthenticationException('No authorization code received');
       }
 
-      // Exchange the code for tokens
       final userEmail = await authService.exchangeAuthorizationCode(
         code: code,
         deviceName: deviceInfo.name,
@@ -634,13 +706,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await notifier.refresh();
 
       if (mounted) {
-        _showSnackBar('Signed in as $userEmail');
+        _showSnackBar(register ? 'Account created as $userEmail' : 'Signed in as $userEmail');
       }
     } catch (e) {
       final logger = ref.read(loggerProvider);
-      logger?.e('OAuth sign in failed', e);
+      logger?.e('Browser auth failed', e);
       if (mounted) {
-        _showSnackBar('Sign in failed: $e', isError: true);
+        _showSnackBar('${register ? "Sign up" : "Sign in"} failed: $e', isError: true);
       }
     } finally {
       if (mounted) {

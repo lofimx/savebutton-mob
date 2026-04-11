@@ -156,14 +156,27 @@ class AuthService {
   }
 
   /// Build the authorization URL for opening in the browser.
+  /// If [provider] is specified (e.g. 'google_oauth2', 'microsoft_graph'),
+  /// opens a provider-specific login page. If [register] is true, opens the
+  /// registration page. Otherwise opens the generic login page.
   Uri buildAuthorizeUrl({
     required String deviceName,
     required String deviceType,
+    String? provider,
+    bool register = false,
     String? state,
   }) {
     final pkce = generatePkceParams();
     final serverUrl = _accountRepo.getServerUrl();
-    return Uri.parse('$serverUrl/api/v1/auth/authorize').replace(
+
+    String path = '$serverUrl/api/v1/auth/authorize';
+    if (register) {
+      path = '$path/register';
+    } else if (provider != null) {
+      path = '$path/$provider';
+    }
+
+    return Uri.parse(path).replace(
       queryParameters: {
         'code_challenge': pkce.codeChallenge,
         'code_challenge_method': pkce.codeChallengeMethod,
