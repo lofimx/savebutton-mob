@@ -22,6 +22,20 @@ workflows:
           include: true
           source: true
     scripts:
+      - name: Stage release notes for Google Play
+        script: |
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "ERROR: RELEASE_NOTES.md is missing or empty. Update it before releasing." >&2
+            exit 1
+          fi
+          BYTES=$(wc -c < RELEASE_NOTES.md | tr -d ' ')
+          if [ "$BYTES" -gt 500 ]; then
+            echo "ERROR: RELEASE_NOTES.md is $BYTES bytes; Google Play caps at 500." >&2
+            exit 1
+          fi
+          CHANGELOG_DIR="android/fastlane/metadata/android/en-US/changelogs"
+          mkdir -p "$CHANGELOG_DIR"
+          cp RELEASE_NOTES.md "$CHANGELOG_DIR/$PROJECT_BUILD_NUMBER.txt"
       - name: Set up key.properties (Android signing)
         script: |
           echo $FCI_KEYSTORE | base64 --decode > $FCI_KEYSTORE_PATH

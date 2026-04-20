@@ -305,9 +305,54 @@ Google OAuth rejects callback URLs with private IP addresses (e.g. `http://192.1
 
 Note: Email/password sign-in does not use OAuth and works fine with a LAN IP address. Use the app's localhost detection to scan for your dev server on the local network.
 
+## Releasing
+
+Releases are triggered manually from the Codemagic dashboard ("Start new build" on the `master` branch). Codemagic builds both the Android AAB and iOS IPA and publishes them.
+
+### Before every release: update `RELEASE_NOTES.md`
+
+`RELEASE_NOTES.md` at the repo root is the single source of truth for end-user release notes on both stores. **Overwrite it with the notes for the upcoming release, commit, and push before starting the Codemagic build.**
+
+Constraints:
+
+- **Google Play caps release notes at 500 bytes.** Codemagic's build fails fast if `RELEASE_NOTES.md` exceeds this or is empty. Keep it short and user-facing.
+- Apple allows up to 4000 characters in "What's New"; 500 is fine there too.
+- Plain text only. No markdown — both stores render it as-is.
+
+Example:
+
+```
+- Sign in with Google or Apple accounts
+- Automatic LAN discovery for local dev servers
+- Bug fixes and performance improvements
+```
+
+### Android (Google Play)
+
+**Fully automatic.** Codemagic copies `RELEASE_NOTES.md` into `android/fastlane/metadata/android/en-US/changelogs/$PROJECT_BUILD_NUMBER.txt` at build time, then publishes the AAB to the production track (`track: production`, `submit_as_draft: false` in `codemagic.yaml`). Google Play picks up the release notes from the fastlane metadata path. No manual steps required.
+
+> **Note:** This setup assumes Codemagic's `google_play` publisher auto-detects the fastlane changelogs directory. If the "What's New" field shows empty on Play Store after a release, the fix is to bypass auto-detection and call the [`google-play`](https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/google-play/README.md) CLI directly from a script step — the CLI accepts explicit `--bundles-release-notes` arguments. Verify on the first release using this setup and adjust if needed.
+
+### iOS (App Store)
+
+**Partially automatic.** Each build uploads a signed IPA to App Store Connect and distributes it to the "Save Button App Beta" TestFlight group. Submission to App Store review runs via `submit_to_app_store: true`, but an App Store Connect version only enters review if all required metadata is in place *at the moment Codemagic publishes*.
+
+Export compliance is pre-answered via `ITSAppUsesNonExemptEncryption=false` in `ios/Runner/Info.plist` — the app uses only exempt encryption (HTTPS + PKCE hashing), so the France/export compliance prompts are skipped automatically. Do not flip this to `true` unless the app adds custom encryption beyond Apple-provided APIs.
+
+Remaining manual steps per release (in App Store Connect):
+
+1. **App Store** tab → if the new version (e.g. `1.1.N`) isn't already listed, click **"+"** next to iOS App to create it
+2. Under **Build**, click **"+"** to attach the build Codemagic uploaded
+3. Paste the contents of `RELEASE_NOTES.md` into **What's New in This Version**
+4. Confirm screenshots and review info are current
+5. Choose a release option (Manual / Automatic after approval / Scheduled)
+6. Click **Add for Review** → **Submit for Review**
+
+If you want step 3 automated in the future, add a Codemagic script step that calls `app-store-connect app-store-version-localizations` to push `RELEASE_NOTES.md` into the new version before `submit_to_app_store` fires.
+
 ## Codemagic
 
-iOS and Android apps are released via Codemagic. Use [codemagic-cli-tools](https://docs.codemagic.io/knowledge-codemagic/codemagic-cli-tools/) whenever possible:
+Use [codemagic-cli-tools](https://docs.codemagic.io/knowledge-codemagic/codemagic-cli-tools/) whenever possible:
 
 * [`codemagic-cli-tools`](https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/codemagic-cli-tools/README.md)
 * [`git-changelog`](https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/git-changelog/README.md)
