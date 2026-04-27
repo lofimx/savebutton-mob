@@ -60,8 +60,8 @@ class ShareReceiverService {
           _logger?.i('Processing shared URL: $content');
           await repo.addBookmark(content);
         } else {
-          _logger?.i('Processing shared text as note');
-          await repo.addNote(content);
+          _logger?.i('Processing shared text as blurb');
+          await repo.addBlurb(content);
         }
       }
 

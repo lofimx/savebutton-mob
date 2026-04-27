@@ -3,8 +3,8 @@ enum AngaType {
   /// A bookmark stored as a .url file
   bookmark,
 
-  /// A text note stored as a .md file (notes, quotes, snippets, etc.)
-  note,
+  /// A text blurb stored as a .md file (snippets, quotes, jotted text, etc.)
+  blurb,
 
   /// Any other file type (images, PDFs, videos, etc.)
   file,
@@ -15,8 +15,8 @@ extension AngaTypeExtension on AngaType {
     switch (this) {
       case AngaType.bookmark:
         return 'Bookmark';
-      case AngaType.note:
-        return 'Note';
+      case AngaType.blurb:
+        return 'Blurb';
       case AngaType.file:
         return 'File';
     }
@@ -31,9 +31,10 @@ AngaType angaTypeFromFilename(String filename) {
     return AngaType.bookmark;
   }
 
-  // Treat all markdown files as notes (includes -note.md, -quote.md, etc.)
+  // Treat all markdown files as blurbs (includes -blurb.md, -note.md
+  // legacy, -quote.md, etc.)
   if (lower.endsWith('.md')) {
-    return AngaType.note;
+    return AngaType.blurb;
   }
 
   return AngaType.file;

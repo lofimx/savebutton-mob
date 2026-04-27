@@ -4,7 +4,7 @@ import 'package:kaya/features/anga/models/anga_type.dart';
 
 part 'anga.freezed.dart';
 
-/// Represents a piece of content (bookmark, note, or file) stored in Kaya.
+/// Represents a piece of content (bookmark, blurb, or file) stored in Kaya.
 ///
 /// Anga filenames follow the format: `YYYY-MM-DDTHHMMSS-{descriptor}.{ext}`
 /// For example: `2026-01-27T171207-www-deobald-ca.url`
@@ -72,7 +72,7 @@ class Anga with _$Anga {
         }
         return _extractDescriptor();
 
-      case AngaType.note:
+      case AngaType.blurb:
         // Return first line or first 50 chars of content
         if (content != null && content!.isNotEmpty) {
           final firstLine = content!.split('\n').first;
@@ -81,7 +81,7 @@ class Anga with _$Anga {
           }
           return firstLine;
         }
-        return 'Note';
+        return 'Blurb';
 
       case AngaType.file:
         return _extractDescriptor();
@@ -139,10 +139,10 @@ String generateBookmarkFilename(String urlString, [DateTime? timestamp]) {
   return '$ts-$sanitizedDomain.url';
 }
 
-/// Generates a note filename.
-String generateNoteFilename([DateTime? timestamp]) {
+/// Generates a blurb filename.
+String generateBlurbFilename([DateTime? timestamp]) {
   final ts = DateTimeUtils.generateTimestamp(timestamp);
-  return '$ts-note.md';
+  return '$ts-blurb.md';
 }
 
 /// Generates a file filename from an original filename.

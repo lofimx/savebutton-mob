@@ -13,7 +13,7 @@ part 'file_storage_service.g.dart';
 /// Service for managing file storage in the Kaya directories.
 ///
 /// Directory structure:
-/// - /kaya/anga/  - bookmarks, notes, and files
+/// - /kaya/anga/  - bookmarks, blurbs, and files
 /// - /kaya/meta/  - metadata TOML files
 /// - /kaya/cache/ - cached favicons (download-only from server)
 /// - /kaya/words/ - extracted plaintext for search (download-only from server)
@@ -81,7 +81,7 @@ class FileStorageService {
       final stat = await file.stat();
       String? content;
 
-      // Load text content for bookmarks and notes
+      // Load text content for bookmarks and blurbs
       if (filename.endsWith('.url') ||
           filename.endsWith('.md') ||
           filename.endsWith('.txt')) {
@@ -109,15 +109,15 @@ class FileStorageService {
     return Anga.fromPath(path, content: content);
   }
 
-  /// Saves a note.
-  Future<Anga> saveNote(String text) async {
+  /// Saves a blurb.
+  Future<Anga> saveBlurb(String text) async {
     await ensureDirectories();
 
-    final filename = _uniqueFilename(generateNoteFilename());
+    final filename = _uniqueFilename(generateBlurbFilename());
     final path = '$angaPath/$filename';
 
     await File(path).writeAsString(text);
-    _logger?.i('Saved note: $filename');
+    _logger?.i('Saved blurb: $filename');
 
     return Anga.fromPath(path, content: text);
   }

@@ -290,7 +290,7 @@ class _MetaForAngaProviderElement
   String get angaFilename => (origin as MetaForAngaProvider).angaFilename;
 }
 
-String _$angaRepositoryHash() => r'8f19e515f0ace797d8ac6490e45a94bd75339564';
+String _$angaRepositoryHash() => r'39aae0626335c694b32bb187e1ca21f207630d49';
 
 /// Notifier for managing the list of angas.
 ///

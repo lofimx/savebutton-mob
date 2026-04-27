@@ -42,8 +42,8 @@ class AngaTile extends ConsumerWidget {
     switch (anga.type) {
       case AngaType.bookmark:
         return _buildBookmarkContent(context, ref);
-      case AngaType.note:
-        return _buildNoteContent(context);
+      case AngaType.blurb:
+        return _buildBlurbContent(context);
       case AngaType.file:
         return _buildFileContent(context);
     }
@@ -101,7 +101,7 @@ class AngaTile extends ConsumerWidget {
     );
   }
 
-  Widget _buildNoteContent(BuildContext context) {
+  Widget _buildBlurbContent(BuildContext context) {
     final content = anga.content ?? '';
     final isShort = content.length < 100;
 

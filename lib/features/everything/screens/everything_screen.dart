@@ -63,7 +63,7 @@ class _EverythingScreenState extends ConsumerState<EverythingScreen> {
           IconButton(
             icon: Icon(KayaIcon.add),
             onPressed: () => context.push(AddScreen.routePath),
-            tooltip: 'Add bookmark or note',
+            tooltip: 'Add bookmark or blurb',
           ),
         ],
       ),
@@ -98,7 +98,7 @@ class _EverythingScreenState extends ConsumerState<EverythingScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Local-first bookmarks & notes',
+                    'Local-first bookmarks & blurbs',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
@@ -260,7 +260,7 @@ class _EverythingScreenState extends ConsumerState<EverythingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No bookmarks or notes yet',
+            'No bookmarks or blurbs yet',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),

@@ -32,10 +32,10 @@ class AngaRepository extends _$AngaRepository {
     return anga;
   }
 
-  /// Adds a note.
-  Future<Anga> addNote(String text) async {
+  /// Adds a blurb.
+  Future<Anga> addBlurb(String text) async {
     final storage = await ref.read(fileStorageServiceProvider.future);
-    final anga = await storage.saveNote(text);
+    final anga = await storage.saveBlurb(text);
     await refresh();
     return anga;
   }

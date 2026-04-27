@@ -17,15 +17,29 @@ void main() {
         expect(anga.filename, equals('2026-01-27T171207-example-com.url'));
       });
 
-      test('creates note anga from -note.md file', () {
-        const content = 'This is my note';
+      test('creates blurb anga from -blurb.md file', () {
+        const content = 'This is my blurb';
         final anga = Anga.fromPath(
-          '/kaya/anga/2026-01-27T171207-note.md',
+          '/kaya/anga/2026-01-27T171207-blurb.md',
           content: content,
         );
 
-        expect(anga.type, equals(AngaType.note));
+        expect(anga.type, equals(AngaType.blurb));
         expect(anga.content, equals(content));
+      });
+
+      test('classifies legacy -note.md files as blurbs (pre-rename data)', () {
+        // Existing user data created before the "note" → "blurb" rename uses
+        // the -note.md slug. The .md extension is the canonical signal — the
+        // slug is decorative — so these must continue to be classified as
+        // blurbs.
+        const content = 'Legacy note content';
+        final anga = Anga.fromPath(
+          '/kaya/anga/2024-01-01T120000-note.md',
+          content: content,
+        );
+
+        expect(anga.type, equals(AngaType.blurb));
       });
 
       test('creates file anga for other extensions', () {
@@ -49,10 +63,10 @@ void main() {
         expect(anga.displayTitle, equals('www.example.com'));
       });
 
-      test('returns first line for notes', () {
+      test('returns first line for blurbs', () {
         const content = 'First line\nSecond line';
         final anga = Anga.fromPath(
-          '/kaya/anga/2026-01-27T171207-note.md',
+          '/kaya/anga/2026-01-27T171207-blurb.md',
           content: content,
         );
 
@@ -62,7 +76,7 @@ void main() {
       test('truncates long titles', () {
         final longContent = 'A' * 100;
         final anga = Anga.fromPath(
-          '/kaya/anga/2026-01-27T171207-note.md',
+          '/kaya/anga/2026-01-27T171207-blurb.md',
           content: longContent,
         );
 
@@ -116,11 +130,11 @@ void main() {
       );
     });
 
-    test('generateNoteFilename creates correct format', () {
+    test('generateBlurbFilename creates correct format', () {
       final ts = DateTime.utc(2026, 1, 27, 17, 12, 7);
-      final filename = generateNoteFilename(ts);
+      final filename = generateBlurbFilename(ts);
 
-      expect(filename, equals('2026-01-27T171207-note.md'));
+      expect(filename, equals('2026-01-27T171207-blurb.md'));
     });
 
     test('generateFileFilename preserves extension', () {

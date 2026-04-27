@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kaya/features/anga/services/anga_repository.dart';
 
-/// Screen for adding a new bookmark or note.
+/// Screen for adding a new bookmark or blurb.
 class AddScreen extends ConsumerStatefulWidget {
   static const routePath = '/add';
   static const routeName = 'add';
@@ -44,7 +44,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Bookmark or Note'),
+        title: const Text('Add Bookmark or Blurb'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -54,8 +54,8 @@ class _AddScreenState extends ConsumerState<AddScreen> {
             TextField(
               controller: _controller,
               decoration: const InputDecoration(
-                labelText: 'URL or Note',
-                hintText: 'Enter a URL to bookmark or text for a note',
+                labelText: 'URL or Blurb',
+                hintText: 'Enter a URL to bookmark or text for a blurb',
                 border: OutlineInputBorder(),
               ),
               maxLines: 5,
@@ -69,7 +69,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
                   ? 'Enter a URL or text'
                   : _isUrl
                       ? 'Will be saved as a bookmark'
-                      : 'Will be saved as a note',
+                      : 'Will be saved as a blurb',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -128,7 +128,7 @@ class _AddScreenState extends ConsumerState<AddScreen> {
         }
         await repo.addBookmark(url);
       } else {
-        await repo.addNote(text);
+        await repo.addBlurb(text);
       }
 
       if (mounted) {

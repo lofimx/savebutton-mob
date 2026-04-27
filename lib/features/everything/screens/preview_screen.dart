@@ -104,8 +104,8 @@ class _PreviewScreenState extends ConsumerState<PreviewScreen> {
     switch (anga.type) {
       case AngaType.bookmark:
         return _buildBookmarkContent(anga);
-      case AngaType.note:
-        return _buildNoteContent(anga);
+      case AngaType.blurb:
+        return _buildBlurbContent(anga);
       case AngaType.file:
         return _buildFileContent(anga);
     }
@@ -175,7 +175,7 @@ class _PreviewScreenState extends ConsumerState<PreviewScreen> {
     return await storage.getWordsText(anga.filename);
   }
 
-  Widget _buildNoteContent(Anga anga) {
+  Widget _buildBlurbContent(Anga anga) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: SelectableText(
